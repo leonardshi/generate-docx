@@ -19,7 +19,9 @@ import java.nio.file.Path;
 
 import org.docx4j.openpackaging.exceptions.Docx4JException;
 import org.docx4j.openpackaging.packages.WordprocessingMLPackage;
+import org.springframework.stereotype.Service;
 
+@Service
 public class MarkdownToDocxService {
 
     public void convertMarkdownToDocx(String inputMarkdown, String outputDocxFile) throws IOException, org.docx4j.openpackaging.exceptions.InvalidFormatException, org.docx4j.openpackaging.exceptions.Docx4JException {
