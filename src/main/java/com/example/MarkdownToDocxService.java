@@ -235,6 +235,67 @@ public class MarkdownToDocxService {
                 }
             }
 
+            // Process the second and third tables
+            for (int tableIndex = 1; tableIndex <= 2; tableIndex++) {
+                if (tables.size() > tableIndex) {
+                    Tbl currentTable = (Tbl) ((javax.xml.bind.JAXBElement<?>) tables.get(tableIndex)).getValue();
+
+                    // Get the rows of the table
+                    List<Object> tableRows = currentTable.getContent();
+
+                    if (!tableRows.isEmpty()) {
+                        // Get the first row of the table
+                        Tr currentFirstRow = (Tr) tableRows.get(0);
+
+                        // Set black background color for the first row of the table
+                        for (Object cell : currentFirstRow.getContent()) {
+                            if (cell instanceof javax.xml.bind.JAXBElement) {
+                                Object value = ((javax.xml.bind.JAXBElement<?>) cell).getValue();
+                                if (value instanceof Tc) {
+                                    Tc tc = (Tc) value;
+                                    TcPr tcPrCell = tc.getTcPr();
+                                    if (tcPrCell == null) {
+                                        tcPrCell = new TcPr();
+                                        tc.setTcPr(tcPrCell);
+                                    }
+
+                                    CTShd shd = new CTShd();
+                                    shd.setFill("000000"); // Black color
+                                    tcPrCell.setShd(shd);
+
+                                    // Set font color to white and make text bold
+                                    for (Object content : tc.getContent()) {
+                                        if (content instanceof P) {
+                                            P paragraph = (P) content;
+                                            List<Object> paragraphContents = paragraph.getContent();
+                                            for (Object paragraphContent : paragraphContents) {
+                                                if (paragraphContent instanceof R) {
+                                                    R run = (R) paragraphContent;
+                                                    RPr rPr = run.getRPr();
+                                                    if (rPr == null) {
+                                                        rPr = new RPr();
+                                                        run.setRPr(rPr);
+                                                    }
+
+                                                    // Set font color to white
+                                                    Color color = new Color();
+                                                    color.setVal("FFFFFF"); // White color
+                                                    rPr.setColor(color);
+
+                                                    // Make text bold
+                                                    BooleanDefaultTrue b = new BooleanDefaultTrue();
+                                                    rPr.setB(b);
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
             // Save the changes
             wordMLPackage.save(new File(inputDocxFile));
 
