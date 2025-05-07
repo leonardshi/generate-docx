@@ -5,10 +5,6 @@ import com.vladsch.flexmark.parser.Parser;
 import com.vladsch.flexmark.util.ast.Node;
 import com.vladsch.flexmark.util.data.MutableDataSet;
 
-import jakarta.xml.bind.JAXBException;
-
-// import jakarta.xml.bind.JAXBException; // Removed unnecessary import
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
@@ -187,6 +183,52 @@ public class MarkdownToDocxService {
                                 // Make text bold
                                 BooleanDefaultTrue b = new BooleanDefaultTrue();
                                 rPr.setB(b);
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Set background color and bold font for the first cell of each row except the first row
+            for (int i = 1; i < rows.size(); i++) { // Start from the second row
+                Tr row = (Tr) rows.get(i);
+                if (!row.getContent().isEmpty()) {
+                    Object firstCellObject = row.getContent().get(0);
+                    if (firstCellObject instanceof javax.xml.bind.JAXBElement) {
+                        Object value = ((javax.xml.bind.JAXBElement<?>) firstCellObject).getValue();
+                        if (value instanceof Tc) {
+                            Tc firstCellInRow = (Tc) value; // Renamed to avoid conflict
+                            TcPr firstCellTcPr = firstCellInRow.getTcPr(); // Renamed to avoid conflict
+                            if (firstCellTcPr == null) {
+                                firstCellTcPr = new TcPr();
+                                firstCellInRow.setTcPr(firstCellTcPr);
+                            }
+
+                            // Set background color to light gray
+                            CTShd shd = new CTShd();
+                            shd.setFill("F2F2F2"); // Light gray color
+                            firstCellTcPr.setShd(shd);
+
+                            // Set bold font for the text in the first cell
+                            for (Object content : firstCellInRow.getContent()) {
+                                if (content instanceof P) {
+                                    P paragraph = (P) content;
+                                    List<Object> paragraphContents = paragraph.getContent();
+                                    for (Object paragraphContent : paragraphContents) {
+                                        if (paragraphContent instanceof R) {
+                                            R run = (R) paragraphContent;
+                                            RPr rPr = run.getRPr();
+                                            if (rPr == null) {
+                                                rPr = new RPr();
+                                                run.setRPr(rPr);
+                                            }
+
+                                            // Make text bold
+                                            BooleanDefaultTrue b = new BooleanDefaultTrue();
+                                            rPr.setB(b);
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
