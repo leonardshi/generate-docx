@@ -71,6 +71,46 @@ public class MarkdownToDocxService {
         }
     }
 
+    private void setCellBackgroundColor(Tc cell, String color) {
+        TcPr tcPr = cell.getTcPr();
+        if (tcPr == null) {
+            tcPr = new TcPr();
+            cell.setTcPr(tcPr);
+        }
+
+        CTShd shd = new CTShd();
+        shd.setFill(color);
+        tcPr.setShd(shd);
+    }
+
+    private void setFontColorAndBold(Tc cell, String color) {
+        for (Object content : cell.getContent()) {
+            if (content instanceof P) {
+                P paragraph = (P) content;
+                List<Object> paragraphContents = paragraph.getContent();
+                for (Object paragraphContent : paragraphContents) {
+                    if (paragraphContent instanceof R) {
+                        R run = (R) paragraphContent;
+                        RPr rPr = run.getRPr();
+                        if (rPr == null) {
+                            rPr = new RPr();
+                            run.setRPr(rPr);
+                        }
+
+                        // Set font color
+                        Color fontColor = new Color();
+                        fontColor.setVal(color);
+                        rPr.setColor(fontColor);
+
+                        // Make text bold
+                        BooleanDefaultTrue bold = new BooleanDefaultTrue();
+                        rPr.setB(bold);
+                    }
+                }
+            }
+        }
+    }
+
     public void standardizeDocxFile(String inputDocxFile) throws IOException, Docx4JException {
         // Load the DOCX file
         WordprocessingMLPackage wordMLPackage = WordprocessingMLPackage.load(new File(inputDocxFile));
@@ -80,9 +120,7 @@ public class MarkdownToDocxService {
         List<Object> tables = null;
         try {
             tables = documentPart.getJAXBNodesViaXPath("//w:tbl", true);
-        } catch (XPathBinderAssociationIsPartialException e) {
-            System.out.println(e);
-        } catch (javax.xml.bind.JAXBException e) {
+        } catch (XPathBinderAssociationIsPartialException | javax.xml.bind.JAXBException e) {
             System.out.println(e);
         }
 
@@ -92,7 +130,6 @@ public class MarkdownToDocxService {
         }
 
         try {
-
             // Extract the actual value from JAXBElement before casting
             Tbl table = (Tbl) ((javax.xml.bind.JAXBElement<?>) tables.get(0)).getValue();
 
@@ -151,42 +188,8 @@ public class MarkdownToDocxService {
             // Set black background color for the first row
             for (Object cell : cells) {
                 Tc tc = (Tc) cell;
-                TcPr tcPrCell = tc.getTcPr();
-                if (tcPrCell == null) {
-                    tcPrCell = new TcPr();
-                    tc.setTcPr(tcPrCell);
-                }
-
-                CTShd shd = new CTShd();
-                shd.setFill("000000"); // Black color
-                tcPrCell.setShd(shd);
-
-                // Set font color to white and make text bold
-                for (Object content : tc.getContent()) {
-                    if (content instanceof P) {
-                        P paragraph = (P) content;
-                        List<Object> paragraphContents = paragraph.getContent();
-                        for (Object paragraphContent : paragraphContents) {
-                            if (paragraphContent instanceof R) {
-                                R run = (R) paragraphContent;
-                                RPr rPr = run.getRPr();
-                                if (rPr == null) {
-                                    rPr = new RPr();
-                                    run.setRPr(rPr);
-                                }
-
-                                // Set font color to white
-                                Color color = new Color();
-                                color.setVal("FFFFFF"); // White color
-                                rPr.setColor(color);
-
-                                // Make text bold
-                                BooleanDefaultTrue b = new BooleanDefaultTrue();
-                                rPr.setB(b);
-                            }
-                        }
-                    }
-                }
+                setCellBackgroundColor(tc, "000000");
+                setFontColorAndBold(tc, "FFFFFF"); // White font color
             }
 
             // Set background color and bold font for the first cell of each row except the first row
@@ -198,38 +201,8 @@ public class MarkdownToDocxService {
                         Object value = ((javax.xml.bind.JAXBElement<?>) firstCellObject).getValue();
                         if (value instanceof Tc) {
                             Tc firstCellInRow = (Tc) value; // Renamed to avoid conflict
-                            TcPr firstCellTcPr = firstCellInRow.getTcPr(); // Renamed to avoid conflict
-                            if (firstCellTcPr == null) {
-                                firstCellTcPr = new TcPr();
-                                firstCellInRow.setTcPr(firstCellTcPr);
-                            }
-
-                            // Set background color to light gray
-                            CTShd shd = new CTShd();
-                            shd.setFill("F2F2F2"); // Light gray color
-                            firstCellTcPr.setShd(shd);
-
-                            // Set bold font for the text in the first cell
-                            for (Object content : firstCellInRow.getContent()) {
-                                if (content instanceof P) {
-                                    P paragraph = (P) content;
-                                    List<Object> paragraphContents = paragraph.getContent();
-                                    for (Object paragraphContent : paragraphContents) {
-                                        if (paragraphContent instanceof R) {
-                                            R run = (R) paragraphContent;
-                                            RPr rPr = run.getRPr();
-                                            if (rPr == null) {
-                                                rPr = new RPr();
-                                                run.setRPr(rPr);
-                                            }
-
-                                            // Make text bold
-                                            BooleanDefaultTrue b = new BooleanDefaultTrue();
-                                            rPr.setB(b);
-                                        }
-                                    }
-                                }
-                            }
+                            setCellBackgroundColor(firstCellInRow, "F2F2F2"); // Light gray color
+                            setFontColorAndBold(firstCellInRow, "000000"); // Black font color
                         }
                     }
                 }
@@ -253,131 +226,8 @@ public class MarkdownToDocxService {
                                 Object value = ((javax.xml.bind.JAXBElement<?>) cell).getValue();
                                 if (value instanceof Tc) {
                                     Tc tc = (Tc) value;
-                                    TcPr tcPrCell = tc.getTcPr();
-                                    if (tcPrCell == null) {
-                                        tcPrCell = new TcPr();
-                                        tc.setTcPr(tcPrCell);
-                                    }
-
-                                    CTShd shd = new CTShd();
-                                    shd.setFill("000000"); // Black color
-                                    tcPrCell.setShd(shd);
-
-                                    // Set font color to white and make text bold
-                                    for (Object content : tc.getContent()) {
-                                        if (content instanceof P) {
-                                            P paragraph = (P) content;
-                                            List<Object> paragraphContents = paragraph.getContent();
-                                            for (Object paragraphContent : paragraphContents) {
-                                                if (paragraphContent instanceof R) {
-                                                    R run = (R) paragraphContent;
-                                                    RPr rPr = run.getRPr();
-                                                    if (rPr == null) {
-                                                        rPr = new RPr();
-                                                        run.setRPr(rPr);
-                                                    }
-
-                                                    // Set font color to white
-                                                    Color color = new Color();
-                                                    color.setVal("FFFFFF"); // White color
-                                                    rPr.setColor(color);
-
-                                                    // Make text bold
-                                                    BooleanDefaultTrue b = new BooleanDefaultTrue();
-                                                    rPr.setB(b);
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Merge the first row of the third table into a single cell
-            List<Object> thirdTableRows = new java.util.ArrayList<>();
-            if (tables.size() > 2) {
-                Tbl thirdTable = (Tbl) ((javax.xml.bind.JAXBElement<?>) tables.get(2)).getValue();
-
-                // Get the rows of the third table
-                thirdTableRows = thirdTable.getContent();
-
-                if (!thirdTableRows.isEmpty()) {
-                    // Get the first row of the third table
-                    Tr firstRowThirdTable = (Tr) thirdTableRows.get(0);
-
-                    // Extract the actual value from JAXBElement before casting
-                    List<Object> thirdTableCells = new java.util.ArrayList<>();
-                    for (Object cell : firstRowThirdTable.getContent()) {
-                        if (cell instanceof javax.xml.bind.JAXBElement) {
-                            Object value = ((javax.xml.bind.JAXBElement<?>) cell).getValue();
-                            if (value instanceof Tc) {
-                                thirdTableCells.add(value);
-                            }
-                        }
-                    }
-
-                    if (thirdTableCells.size() < 4) {
-                        System.out.println("The first row of the third table does not have enough cells to merge.");
-                        return;
-                    }
-
-                    // Get the value of all cells in the first row
-                    StringBuilder mergedCellValue = new StringBuilder();
-                    for (Object cell : thirdTableCells) {
-                        Tc tc = (Tc) cell;
-                        for (Object content : tc.getContent()) {
-                            mergedCellValue.append(content.toString());
-                        }
-                    }
-
-                    // Remove all cells except the first one
-                    for (int i = 1; i < thirdTableCells.size(); i++) {
-                        firstRowThirdTable.getContent().remove(thirdTableCells.get(i));
-                    }
-
-                    // Merge the first cell to span four columns
-                    Tc firstCellThirdTable = (Tc) thirdTableCells.get(0);
-                    TcPr tcPrThirdTable = firstCellThirdTable.getTcPr();
-                    if (tcPrThirdTable == null) {
-                        tcPrThirdTable = new TcPr();
-                        firstCellThirdTable.setTcPr(tcPrThirdTable);
-                    }
-                    TcPrInner.GridSpan gridSpanThirdTable = new TcPrInner.GridSpan();
-                    gridSpanThirdTable.setVal(BigInteger.valueOf(4));
-                    tcPrThirdTable.setGridSpan(gridSpanThirdTable);
-
-                    // Set the value of the merged cell
-                    firstCellThirdTable.getContent().clear();
-                    firstCellThirdTable.getContent().add(documentPart.createParagraphOfText(mergedCellValue.toString()));
-                }
-            }
-
-            // Set font to bold in the first and second rows of the third table
-            for (int rowIndex = 0; rowIndex < Math.min(2, thirdTableRows.size()); rowIndex++) {
-                Tr row = (Tr) thirdTableRows.get(rowIndex);
-                for (Object cell : row.getContent()) {
-                    if (cell instanceof javax.xml.bind.JAXBElement) {
-                        Object value = ((javax.xml.bind.JAXBElement<?>) cell).getValue();
-                        if (value instanceof Tc) {
-                            Tc tc = (Tc) value;
-                            for (Object content : tc.getContent()) {
-                                if (content instanceof P) {
-                                    P paragraph = (P) content;
-                                    for (Object paragraphContent : paragraph.getContent()) {
-                                        if (paragraphContent instanceof R) {
-                                            R run = (R) paragraphContent;
-                                            RPr rPr = run.getRPr();
-                                            if (rPr == null) {
-                                                rPr = new RPr();
-                                                run.setRPr(rPr);
-                                            }
-                                            BooleanDefaultTrue b = new BooleanDefaultTrue();
-                                            rPr.setB(b);
-                                        }
-                                    }
+                                    setCellBackgroundColor(tc, "000000");
+                                    setFontColorAndBold(tc, "FFFFFF"); // White font color
                                 }
                             }
                         }
