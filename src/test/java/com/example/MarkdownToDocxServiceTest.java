@@ -79,7 +79,8 @@ public class MarkdownToDocxServiceTest {
     @Test
     public void testStandardizeDocxFile() throws Exception {
         // Arrange
-        MarkdownToDocxService service = new MarkdownToDocxService();
+        // MarkdownToDocxService service = new MarkdownToDocxService();
+        MeetingMinutesTemplateService service = new MeetingMinutesTemplateService();
         Path tempFile = Files.createTempFile("meeting-minutes", ".docx");
         Files.copy(new File("src/main/resources/meeting-minutes.docx").toPath(), tempFile, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
 
