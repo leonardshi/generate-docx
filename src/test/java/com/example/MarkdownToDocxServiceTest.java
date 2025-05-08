@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.io.File;
+import java.nio.file.CopyOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -86,6 +87,6 @@ public class MarkdownToDocxServiceTest {
         service.standardizeDocxFile(tempFile.toString());
 
         // Clean up
-        Files.deleteIfExists(tempFile);
+        Files.copy(tempFile, Path.of("/mnt/c/temp/output.docx"), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
     }
 }
