@@ -157,42 +157,39 @@ public class MarkdownToDocxService {
             }
         }
 
-        if (cells.size() < 2) {
-            System.out.println("The first row does not have enough cells to combine.");
-            return;
-        }
-
-        // Get the value of the first cell
-        Tc firstCell = (Tc) cells.get(0);
-        StringBuilder firstCellValue = new StringBuilder();
-        for (Object content : firstCell.getContent()) {
-            firstCellValue.append(content.toString());
-        }
-
-        // Merge all cells into the first cell
-        for (int i = 1; i < cells.size(); i++) {
-            Tc cellToMerge = (Tc) cells.get(i);
-            for (Object content : cellToMerge.getContent()) {
+        if (cells.size() >= 2) {
+            // Get the value of the first cell
+            Tc firstCell = (Tc) cells.get(0);
+            StringBuilder firstCellValue = new StringBuilder();
+            for (Object content : firstCell.getContent()) {
                 firstCellValue.append(content.toString());
             }
-            firstRow.getContent().remove(cells.get(i));
+
+            // Merge all cells into the first cell
+            for (int i = 1; i < cells.size(); i++) {
+                Tc cellToMerge = (Tc) cells.get(i);
+                for (Object content : cellToMerge.getContent()) {
+                    firstCellValue.append(content.toString());
+                }
+                firstRow.getContent().remove(cells.get(i));
+            }
+
+            // Update the first cell to span all columns
+            TcPr tcPr = firstCell.getTcPr();
+            if (tcPr == null) {
+                tcPr = new TcPr();
+                firstCell.setTcPr(tcPr);
+            }
+            TcPrInner.GridSpan gridSpan = new TcPrInner.GridSpan();
+            gridSpan.setVal(BigInteger.valueOf(cells.size()));
+            tcPr.setGridSpan(gridSpan);
+
+            // Set the value of the first cell
+            firstCell.getContent().clear();
+            firstCell.getContent().add(documentPart.createParagraphOfText(firstCellValue.toString()));
         }
 
-        // Update the first cell to span all columns
-        TcPr tcPr = firstCell.getTcPr();
-        if (tcPr == null) {
-            tcPr = new TcPr();
-            firstCell.setTcPr(tcPr);
-        }
-        TcPrInner.GridSpan gridSpan = new TcPrInner.GridSpan();
-        gridSpan.setVal(BigInteger.valueOf(cells.size()));
-        tcPr.setGridSpan(gridSpan);
-
-        // Set the value of the first cell
-        firstCell.getContent().clear();
-        firstCell.getContent().add(documentPart.createParagraphOfText(firstCellValue.toString()));
-
-        // Apply background color and font color to the first row
+        // Apply background color and font color to all cells
         for (Object cell : cells) {
             Tc tc = (Tc) cell;
             setCellBackgroundColor(tc, backgroundColor);
@@ -299,32 +296,26 @@ public class MarkdownToDocxService {
             System.out.println(e);
         }
 
-        if (tables == null || tables.isEmpty()) {
-            System.out.println("No tables found in the document.");
-            return;
-        }
-
-        if (tables.size() != 3) {
+        if (tables == null || tables.isEmpty() || tables.size() < 3) {
             System.out.println("Incorrect number of tables found in the document.");
             return;
+        } else {
+            try {
+                Tbl firstTable = (Tbl) ((javax.xml.bind.JAXBElement<?>) tables.get(0)).getValue();
+                processFirstTable(firstTable, documentPart);
+
+                Tbl secondTable = (Tbl) ((javax.xml.bind.JAXBElement<?>) tables.get(1)).getValue();
+                processSecondTable(secondTable);
+
+                Tbl thirdTable = (Tbl) ((javax.xml.bind.JAXBElement<?>) tables.get(2)).getValue();
+                processThirdTable(thirdTable, documentPart);
+
+                System.out.println("Standardized the DOCX file: " + inputDocxFile);
+            } catch (Exception e) {
+                System.out.println("Error while standardizing the DOCX file: " + e.getMessage());
+            }
         }
-
-        try {
-            Tbl firstTable = (Tbl) ((javax.xml.bind.JAXBElement<?>) tables.get(0)).getValue();
-            processFirstTable(firstTable, documentPart);
-
-            Tbl secondTable = (Tbl) ((javax.xml.bind.JAXBElement<?>) tables.get(1)).getValue();
-            processSecondTable(secondTable);
-
-            Tbl thirdTable = (Tbl) ((javax.xml.bind.JAXBElement<?>) tables.get(2)).getValue();
-            processThirdTable(thirdTable, documentPart);
-
-            // Save the changes
-            wordMLPackage.save(new File(inputDocxFile));
-
-            System.out.println("Standardized the DOCX file: " + inputDocxFile);
-        } catch (Exception e) {
-            System.out.println("Error while standardizing the DOCX file: " + e.getMessage());
-        }
+        // Save the changes
+        wordMLPackage.save(new File(inputDocxFile));
     }
 }
