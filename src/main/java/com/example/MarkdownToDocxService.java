@@ -296,6 +296,95 @@ public class MarkdownToDocxService {
                 }
             }
 
+            // Merge the first row of the third table into a single cell
+            List<Object> thirdTableRows = new java.util.ArrayList<>();
+            if (tables.size() > 2) {
+                Tbl thirdTable = (Tbl) ((javax.xml.bind.JAXBElement<?>) tables.get(2)).getValue();
+
+                // Get the rows of the third table
+                thirdTableRows = thirdTable.getContent();
+
+                if (!thirdTableRows.isEmpty()) {
+                    // Get the first row of the third table
+                    Tr firstRowThirdTable = (Tr) thirdTableRows.get(0);
+
+                    // Extract the actual value from JAXBElement before casting
+                    List<Object> thirdTableCells = new java.util.ArrayList<>();
+                    for (Object cell : firstRowThirdTable.getContent()) {
+                        if (cell instanceof javax.xml.bind.JAXBElement) {
+                            Object value = ((javax.xml.bind.JAXBElement<?>) cell).getValue();
+                            if (value instanceof Tc) {
+                                thirdTableCells.add(value);
+                            }
+                        }
+                    }
+
+                    if (thirdTableCells.size() < 4) {
+                        System.out.println("The first row of the third table does not have enough cells to merge.");
+                        return;
+                    }
+
+                    // Get the value of all cells in the first row
+                    StringBuilder mergedCellValue = new StringBuilder();
+                    for (Object cell : thirdTableCells) {
+                        Tc tc = (Tc) cell;
+                        for (Object content : tc.getContent()) {
+                            mergedCellValue.append(content.toString());
+                        }
+                    }
+
+                    // Remove all cells except the first one
+                    for (int i = 1; i < thirdTableCells.size(); i++) {
+                        firstRowThirdTable.getContent().remove(thirdTableCells.get(i));
+                    }
+
+                    // Merge the first cell to span four columns
+                    Tc firstCellThirdTable = (Tc) thirdTableCells.get(0);
+                    TcPr tcPrThirdTable = firstCellThirdTable.getTcPr();
+                    if (tcPrThirdTable == null) {
+                        tcPrThirdTable = new TcPr();
+                        firstCellThirdTable.setTcPr(tcPrThirdTable);
+                    }
+                    TcPrInner.GridSpan gridSpanThirdTable = new TcPrInner.GridSpan();
+                    gridSpanThirdTable.setVal(BigInteger.valueOf(4));
+                    tcPrThirdTable.setGridSpan(gridSpanThirdTable);
+
+                    // Set the value of the merged cell
+                    firstCellThirdTable.getContent().clear();
+                    firstCellThirdTable.getContent().add(documentPart.createParagraphOfText(mergedCellValue.toString()));
+                }
+            }
+
+            // Set font to bold in the first and second rows of the third table
+            for (int rowIndex = 0; rowIndex < Math.min(2, thirdTableRows.size()); rowIndex++) {
+                Tr row = (Tr) thirdTableRows.get(rowIndex);
+                for (Object cell : row.getContent()) {
+                    if (cell instanceof javax.xml.bind.JAXBElement) {
+                        Object value = ((javax.xml.bind.JAXBElement<?>) cell).getValue();
+                        if (value instanceof Tc) {
+                            Tc tc = (Tc) value;
+                            for (Object content : tc.getContent()) {
+                                if (content instanceof P) {
+                                    P paragraph = (P) content;
+                                    for (Object paragraphContent : paragraph.getContent()) {
+                                        if (paragraphContent instanceof R) {
+                                            R run = (R) paragraphContent;
+                                            RPr rPr = run.getRPr();
+                                            if (rPr == null) {
+                                                rPr = new RPr();
+                                                run.setRPr(rPr);
+                                            }
+                                            BooleanDefaultTrue b = new BooleanDefaultTrue();
+                                            rPr.setB(b);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
             // Save the changes
             wordMLPackage.save(new File(inputDocxFile));
 
