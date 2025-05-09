@@ -8,6 +8,8 @@ import org.docx4j.wml.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import jakarta.xml.bind.JAXBException;
+
 import java.io.IOException;
 import java.util.List;
 
@@ -35,8 +37,12 @@ public class MeetingMinutesTemplateService {
         List<Object> tables = null;
         try {
             tables = documentPart.getJAXBNodesViaXPath("//w:tbl", true);
-        } catch (XPathBinderAssociationIsPartialException | javax.xml.bind.JAXBException e) {
+        } catch (XPathBinderAssociationIsPartialException e) {
             logger.error("Error while fetching tables via XPath", e);
+            return;
+        } catch (JAXBException e) {
+            logger.error("Error while fetching tables via XPath", e);
+            return;
         }
 
         if (tables == null || tables.isEmpty() || tables.size() < 3) {
@@ -44,14 +50,20 @@ public class MeetingMinutesTemplateService {
             return;
         } else {
             try {
-                Tbl firstTable = (Tbl) ((javax.xml.bind.JAXBElement<?>) tables.get(0)).getValue();
-                tableProcessor.processFirstTable(firstTable, documentPart);
+                Tbl firstTable = tableProcessor.extractTable(tables.get(0));
+                if (firstTable != null) {
+                    tableProcessor.processFirstTable(firstTable, documentPart);
+                }
 
-                Tbl secondTable = (Tbl) ((javax.xml.bind.JAXBElement<?>) tables.get(1)).getValue();
-                tableProcessor.processSecondTable(secondTable);
+                Tbl secondTable = tableProcessor.extractTable(tables.get(1));
+                if (secondTable != null) {
+                    tableProcessor.processSecondTable(secondTable);
+                }
 
-                Tbl thirdTable = (Tbl) ((javax.xml.bind.JAXBElement<?>) tables.get(2)).getValue();
-                tableProcessor.processThirdTable(thirdTable, documentPart);
+                Tbl thirdTable = tableProcessor.extractTable(tables.get(2));
+                if (thirdTable != null) {
+                    tableProcessor.processThirdTable(thirdTable, documentPart);
+                }
 
                 logger.info("Standardized the DOCX file: {}", inputDocxFilePath);
             } catch (Exception e) {

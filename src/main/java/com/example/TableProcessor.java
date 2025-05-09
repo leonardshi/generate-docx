@@ -19,13 +19,10 @@ public class TableProcessor {
             Tr row = (Tr) rows.get(i);
             if (!row.getContent().isEmpty()) {
                 Object cellObj = row.getContent().get(0);
-                if (cellObj instanceof javax.xml.bind.JAXBElement) {
-                    Object value = ((javax.xml.bind.JAXBElement<?>) cellObj).getValue();
-                    if (value instanceof Tc) {
-                        Tc firstCell = (Tc) value;
-                        setCellBackgroundColor(firstCell, "F2F2F2"); // Light gray background
-                        setFontColorAndBold(firstCell, "000000"); // Black font color
-                    }
+                Tc firstCell = extractTableCell(cellObj);
+                if (firstCell != null) {
+                    setCellBackgroundColor(firstCell, "F2F2F2"); // Light gray background
+                    setFontColorAndBold(firstCell, "000000"); // Black font color
                 }
             }
         }
@@ -41,13 +38,10 @@ public class TableProcessor {
         if (secondRows.size() > 1) {
             Tr secondRow = (Tr) secondRows.get(1);
             for (Object cellObj : secondRow.getContent()) {
-                if (cellObj instanceof javax.xml.bind.JAXBElement) {
-                    Object value = ((javax.xml.bind.JAXBElement<?>) cellObj).getValue();
-                    if (value instanceof Tc) {
-                        Tc cell = (Tc) value;
-                        setCellBackgroundColor(cell, "F2F2F2"); // Light gray background
-                        setFontColorAndBold(cell, "000000"); // Black font color
-                    }
+                Tc cell = extractTableCell(cellObj);
+                if (cell != null) {
+                    setCellBackgroundColor(cell, "F2F2F2"); // Light gray background
+                    setFontColorAndBold(cell, "000000"); // Black font color
                 }
             }
         } else {
@@ -102,13 +96,10 @@ public class TableProcessor {
             Tr firstRow = (Tr) rows.get(0);
 
             for (Object cell : firstRow.getContent()) {
-                if (cell instanceof javax.xml.bind.JAXBElement) {
-                    Object value = ((javax.xml.bind.JAXBElement<?>) cell).getValue();
-                    if (value instanceof Tc) {
-                        Tc tc = (Tc) value;
-                        setCellBackgroundColor(tc, backgroundColor);
-                        setFontColorAndBold(tc, fontColor);
-                    }
+                Tc tc = extractTableCell(cell);
+                if (tc != null) {
+                    setCellBackgroundColor(tc, backgroundColor);
+                    setFontColorAndBold(tc, fontColor);
                 }
             }
         }
@@ -124,25 +115,23 @@ public class TableProcessor {
 
         Tr firstRow = (Tr) rows.get(0);
 
-        List<Object> cells = new java.util.ArrayList<>();
+        List<Tc> cells = new java.util.ArrayList<>();
         for (Object cell : firstRow.getContent()) {
-            if (cell instanceof javax.xml.bind.JAXBElement) {
-                Object value = ((javax.xml.bind.JAXBElement<?>) cell).getValue();
-                if (value instanceof Tc) {
-                    cells.add(value);
-                }
+            Tc tc = extractTableCell(cell);
+            if (tc != null) {
+                cells.add(tc);
             }
         }
 
         if (cells.size() >= 2) {
-            Tc firstCell = (Tc) cells.get(0);
+            Tc firstCell = cells.get(0);
             StringBuilder firstCellValue = new StringBuilder();
             for (Object content : firstCell.getContent()) {
                 firstCellValue.append(content.toString());
             }
 
             for (int i = 1; i < cells.size(); i++) {
-                Tc cellToMerge = (Tc) cells.get(i);
+                Tc cellToMerge = cells.get(i);
                 for (Object content : cellToMerge.getContent()) {
                     firstCellValue.append(content.toString());
                 }
@@ -162,10 +151,33 @@ public class TableProcessor {
             firstCell.getContent().add(documentPart.createParagraphOfText(firstCellValue.toString()));
         }
 
-        for (Object cell : cells) {
-            Tc tc = (Tc) cell;
+        for (Tc tc : cells) {
             setCellBackgroundColor(tc, backgroundColor);
             setFontColorAndBold(tc, fontColor);
         }
+    }
+
+    private Tc extractTableCell(Object cellObj) {
+        if (cellObj instanceof Tc) {
+            return (Tc) cellObj;
+        } else if (cellObj instanceof jakarta.xml.bind.JAXBElement) {
+            Object value = ((jakarta.xml.bind.JAXBElement<?>) cellObj).getValue();
+            if (value instanceof Tc) {
+                return (Tc) value;
+            }
+        }
+        return null;
+    }
+
+    public Tbl extractTable(Object tableObj) {
+        if (tableObj instanceof Tbl) {
+            return (Tbl) tableObj;
+        } else if (tableObj instanceof jakarta.xml.bind.JAXBElement) {
+            Object value = ((jakarta.xml.bind.JAXBElement<?>) tableObj).getValue();
+            if (value instanceof Tbl) {
+                return (Tbl) value;
+            }
+        }
+        return null;
     }
 }

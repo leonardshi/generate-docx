@@ -112,6 +112,6 @@ public class MarkdownToDocxServiceTest {
         service.standardizeDocxFile(tempFile.toString());
 
         // Clean up
-        // Files.copy(tempFile, Path.of("/mnt/c/temp/output.docx"), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+        Files.copy(tempFile, Path.of("/mnt/c/temp/output.docx"), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
     }
 }
